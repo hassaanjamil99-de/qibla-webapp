@@ -4,20 +4,42 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Qibla Direction</title>
+
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="icons/android-chrome-192x192.png">
+
+    <!-- Leaflet.js CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <!-- Your custom stylesheet -->
     <link rel="stylesheet" href="style.css" />
+
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
     <div class="wrap">
         <h1>Qibla Direction</h1>
+        
+        <!-- Compass Display -->
         <div id="compass" class="compass"></div>
+        
+        <!-- Enable Sensor Button -->
         <button id="enableSensor">Enable Sensor</button>
+        
+        <!-- Heading and Accuracy Text -->
         <div id="headingText">Heading: --°</div>
         <div id="accuracyText">Accuracy: --</div>
+
+        <!-- Map Container -->
+        <div id="map" style="width: 100%; height: 400px; margin-top: 20px;"></div>
     </div>
 
+    <!-- Leaflet.js JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <!-- Your custom JavaScript -->
     <script src="app.js"></script>
 </body>
 </html>
