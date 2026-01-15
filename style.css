@@ -1,0 +1,64 @@
+:root {
+    --bg: #0f1115;
+    --fg: #f2f2f2;
+    --muted: #aab0bb;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+}
+
+h1 { font-size: 2em; margin-bottom: 20px; }
+
+#compass {
+    width: 200px;
+    height: 200px;
+    background-color: #333;
+    border-radius: 50%;
+    position: relative;
+    margin: 20px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#compass::before {
+    content: "";
+    width: 6px;
+    height: 100px;
+    background: #e53935;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform-origin: center;
+    transform: translateX(-50%);
+}
+
+#enableSensor {
+    padding: 12px 20px;
+    background: #2b7cff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#enableSensor:hover {
+    background: #1c5f99;
+}
+
+#headingText, #accuracyText {
+    margin-top: 20px;
+    font-size: 1.2em;
+}
