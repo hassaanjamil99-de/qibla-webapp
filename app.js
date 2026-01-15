@@ -153,6 +153,18 @@ function startListeningToOrientation() {
   window.addEventListener("deviceorientation", handler, true);
 }
 
+// ---------- Map initialization ----------
+const map = L.map('map').setView([KAABA_LAT, KAABA_LON], 15); // Center the map to Mecca
+
+// Add tile layer (OpenStreetMap)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+// Marker for Kaaba (Mecca)
+const kaabaMarker = L.marker([KAABA_LAT, KAABA_LON]).addTo(map);
+kaabaMarker.bindPopup("<b>Kaaba</b>").openPopup();
+
 enableBtn.addEventListener("click", async () => {
   if (started) return; // prevent duplicate listeners
   started = true;
@@ -177,6 +189,16 @@ enableBtn.addEventListener("click", async () => {
 
     // Start sensor listening
     startListeningToOrientation();
+
+    // Add user location marker
+    const userMarker = L.marker([lat, lon]).addTo(map);
+    userMarker.bindPopup("<b>Your Location</b>").openPopup();
+
+    // Show Qibla direction as line on the map
+    const qiblaLine = L.polyline([
+      [lat, lon],
+      [KAABA_LAT, KAABA_LON]
+    ], { color: 'red' }).addTo(map); // Draw a red line to Kaaba
   } catch (err) {
     started = false;
 
