@@ -1,30 +1,36 @@
 // ===============================
-// Qibla Direction Web App (app.js)
+// Qibla Direction Web App (FINAL)
 // ===============================
 
-// 🕋 Kaaba coordinates (fixed)
 const KAABA_LAT = 21.4225;
 const KAABA_LON = 39.8262;
 
-// UI elements (must exist in index.html)
+// UI
 const compassEl = document.getElementById("compass");
 const enableBtn = document.getElementById("enableSensor");
 const headingTextEl = document.getElementById("headingText");
 const accuracyTextEl = document.getElementById("accuracyText");
 
+// Add center dot if not present (nice look)
+(function ensureDot(){
+  if (!compassEl.querySelector(".dot")) {
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    compassEl.appendChild(dot);
+  }
+})();
+
 // State
-let qiblaBearing = null;        // 0..360 (degrees from North)
-let lastRotation = 0;           // for smoothing
+let qiblaBearing = null;
+let lastRotation = 0;
 let started = false;
 
-// ---------- Helpers ----------
-function toRadians(deg) {
-  return deg * Math.PI / 180;
-}
+// Map state
+let map, kaabaMarker, userMarker, qiblaLine;
 
-function toDegrees(rad) {
-  return rad * 180 / Math.PI;
-}
+// ---------------- Helpers ----------------
+function toRadians(deg) { return deg * Math.PI / 180; }
+function toDegrees(rad) { return rad * 180 / Math.PI; }
 
 function normalize360(deg) {
   let x = deg % 360;
@@ -32,21 +38,18 @@ function normalize360(deg) {
   return x;
 }
 
-// Returns shortest signed difference between angles (deg): [-180, 180]
+// shortest signed angle diff: [-180, 180]
 function shortestAngleDiff(target, current) {
-  let diff = (target - current + 540) % 360 - 180;
-  return diff;
+  return (target - current + 540) % 360 - 180;
 }
 
-// Simple smoothing for rotation (avoids jitter)
-function smoothRotation(current, target, factor = 0.15) {
-  // Move current toward target by factor, along shortest path
+// smoothing
+function smoothRotation(current, target, factor = 0.18) {
   const diff = shortestAngleDiff(target, current);
   return normalize360(current + diff * factor);
 }
 
-// ---------- Qibla formula ----------
-// Output: bearing angle in degrees (0..360), where 0 = North
+// Qibla bearing 0..360
 function calculateQiblaBearing(userLat, userLon) {
   const lat1 = toRadians(userLat);
   const lat2 = toRadians(KAABA_LAT);
@@ -60,9 +63,25 @@ function calculateQiblaBearing(userLat, userLon) {
   return normalize360(toDegrees(angle));
 }
 
-// ---------- Orientation reading ----------
+// Distance (km) - Haversine
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // km
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// ---------------- Orientation ----------------
 function getDeviceHeading(event) {
-  // iOS Safari provides true compass heading:
+  // iOS Safari (true compass)
   if (typeof event.webkitCompassHeading === "number") {
     return {
       heading: normalize360(event.webkitCompassHeading),
@@ -72,7 +91,7 @@ function getDeviceHeading(event) {
     };
   }
 
-  // Android/others: alpha is rotation around Z axis (often relative)
+  // Android/others
   if (typeof event.alpha === "number") {
     return {
       heading: normalize360(360 - event.alpha),
@@ -83,23 +102,20 @@ function getDeviceHeading(event) {
   return null;
 }
 
-// ---------- Main update ----------
-function updateUI(deviceHeading, accuracyLabel) {
+// ---------------- UI update ----------------
+function updateCompass(deviceHeading) {
   if (qiblaBearing === null) return;
 
-  // Rotation needed so that the "needle" points to Qibla.
-  // If your needle is drawn pointing NORTH by default,
-  // the angle to rotate = (qiblaBearing - deviceHeading).
   const targetRotation = normalize360(qiblaBearing - deviceHeading);
-
-  // Smooth it a bit
   lastRotation = smoothRotation(lastRotation, targetRotation, 0.18);
 
-  // Rotate the whole compass element
   compassEl.style.transform = `rotate(${lastRotation}deg)`;
+}
 
-  // Display info
-  const turn = shortestAngleDiff(qiblaBearing, deviceHeading); // [-180,180]
+function setText(deviceHeading, accuracyLabel, distanceKm) {
+  if (qiblaBearing === null) return;
+
+  const turn = shortestAngleDiff(qiblaBearing, deviceHeading);
   const turnText =
     turn === 0 ? "0°" :
     turn > 0 ? `${Math.abs(turn).toFixed(0)}° right` :
@@ -108,109 +124,127 @@ function updateUI(deviceHeading, accuracyLabel) {
   headingTextEl.textContent =
     `Qibla: ${qiblaBearing.toFixed(0)}° | Heading: ${deviceHeading.toFixed(0)}° | Turn: ${turnText}`;
 
-  accuracyTextEl.textContent = accuracyLabel ?? "--";
+  if (distanceKm != null) {
+    accuracyTextEl.textContent = `Distance to Kaaba: ${distanceKm.toFixed(0)} km | Accuracy: ${accuracyLabel ?? "--"}`;
+  } else {
+    accuracyTextEl.textContent = `Accuracy: ${accuracyLabel ?? "--"}`;
+  }
 }
 
-// ---------- Start flow ----------
+// ---------------- Permissions + Location ----------------
 async function requestIOSPermissionIfNeeded() {
-  // iOS 13+ requires explicit permission request in a user gesture
   if (
     typeof DeviceOrientationEvent !== "undefined" &&
     typeof DeviceOrientationEvent.requestPermission === "function"
   ) {
     const res = await DeviceOrientationEvent.requestPermission();
-    if (res !== "granted") {
-      throw new Error("Permission denied");
-    }
+    if (res !== "granted") throw new Error("Permission denied");
   }
 }
 
 function getLocation() {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Geolocation not supported"));
-      return;
-    }
-
+    if (!navigator.geolocation) return reject(new Error("Geolocation not supported"));
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve(pos),
-      (err) => reject(err),
+      resolve,
+      reject,
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   });
 }
 
-function startListeningToOrientation() {
+// ---------------- Map ----------------
+function initMap() {
+  map = L.map("map", { zoomControl: true }).setView([KAABA_LAT, KAABA_LON], 15);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  kaabaMarker = L.marker([KAABA_LAT, KAABA_LON]).addTo(map);
+  kaabaMarker.bindPopup("<b>Kaaba 🕋</b>");
+}
+
+function updateMap(userLat, userLon) {
+  if (!map) return;
+
+  // User marker
+  if (userMarker) userMarker.remove();
+  userMarker = L.marker([userLat, userLon]).addTo(map);
+  userMarker.bindPopup("<b>Your Location</b>");
+
+  // Qibla line
+  if (qiblaLine) qiblaLine.remove();
+  qiblaLine = L.polyline(
+    [[userLat, userLon], [KAABA_LAT, KAABA_LON]],
+    { color: "#ff3b3b", weight: 3 }
+  ).addTo(map);
+
+  // Fit view nicely
+  const bounds = L.latLngBounds(
+    [userLat, userLon],
+    [KAABA_LAT, KAABA_LON]
+  );
+  map.fitBounds(bounds, { padding: [30, 30] });
+}
+
+// ---------------- Start ----------------
+initMap();
+
+function startListeningToOrientation(distanceKm) {
   const handler = (e) => {
     const data = getDeviceHeading(e);
     if (!data) return;
 
-    updateUI(data.heading, data.accuracy);
+    updateCompass(data.heading);
+    setText(data.heading, data.accuracy, distanceKm);
   };
 
-  // Some browsers fire only one of these; safe to listen to both.
   window.addEventListener("deviceorientationabsolute", handler, true);
   window.addEventListener("deviceorientation", handler, true);
 }
 
-// ---------- Map initialization ----------
-const map = L.map('map').setView([KAABA_LAT, KAABA_LON], 15); // Center the map to Mecca
-
-// Add tile layer (OpenStreetMap)
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
-
-// Marker for Kaaba (Mecca)
-const kaabaMarker = L.marker([KAABA_LAT, KAABA_LON]).addTo(map);
-kaabaMarker.bindPopup("<b>Kaaba</b>").openPopup();
-
 enableBtn.addEventListener("click", async () => {
-  if (started) return; // prevent duplicate listeners
+  if (started) return;
   started = true;
 
   headingTextEl.textContent = "Getting location…";
-  accuracyTextEl.textContent = "--";
+  accuracyTextEl.textContent = "Waiting for permissions…";
 
   try {
-    // iOS permission (must be triggered by button click)
     await requestIOSPermissionIfNeeded();
 
-    // Get user location
     const pos = await getLocation();
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
 
-    // Calculate Qibla bearing
     qiblaBearing = calculateQiblaBearing(lat, lon);
+    const distanceKm = haversineDistance(lat, lon, KAABA_LAT, KAABA_LON);
+
+    // Update map with user + line
+    updateMap(lat, lon);
 
     headingTextEl.textContent =
       `Location OK. Qibla bearing: ${qiblaBearing.toFixed(0)}°. Move phone in a figure-8 to calibrate.`;
+    accuracyTextEl.textContent =
+      `Distance to Kaaba: ${distanceKm.toFixed(0)} km | Accuracy: --`;
 
-    // Start sensor listening
-    startListeningToOrientation();
+    startListeningToOrientation(distanceKm);
 
-    // Add user location marker
-    const userMarker = L.marker([lat, lon]).addTo(map);
-    userMarker.bindPopup("<b>Your Location</b>").openPopup();
-
-    // Show Qibla direction as line on the map
-    const qiblaLine = L.polyline([
-      [lat, lon],
-      [KAABA_LAT, KAABA_LON]
-    ], { color: 'red' }).addTo(map); // Draw a red line to Kaaba
   } catch (err) {
     started = false;
 
-    if (String(err?.message).toLowerCase().includes("permission")) {
+    const msg = String(err?.message || "").toLowerCase();
+
+    if (msg.includes("permission")) {
       headingTextEl.textContent =
-        "Permission denied. Open this site on HTTPS in Safari/Chrome and allow motion/orientation + location.";
+        "Permission denied. Please allow Motion/Orientation and Location in Safari.";
     } else if (err && err.code === 1) {
       headingTextEl.textContent =
         "Location denied. Please allow Location access in browser settings.";
     } else {
       headingTextEl.textContent =
-        "Could not start sensors. Ensure HTTPS + allow Location and Motion/Orientation.";
+        "Could not start. Ensure HTTPS + allow Location and Motion/Orientation.";
     }
 
     accuracyTextEl.textContent = "--";
