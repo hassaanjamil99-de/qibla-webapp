@@ -7,7 +7,10 @@
   --ring:rgba(255,255,255,.14);
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
+
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -16,74 +19,79 @@ body{
 }
 
 .wrap{
-  max-width: 520px;
-  margin: 0 auto;
-  padding: 28px 18px 40px;
+  max-width:520px;
+  margin:0 auto;
+  padding:28px 18px 40px;
   display:flex;
   flex-direction:column;
   gap:18px;
 }
 
+/* ---------- Header ---------- */
 .header{
   text-align:center;
 }
+
 .header h1{
   margin:0;
-  font-size: 2rem;
+  font-size:2rem;
   letter-spacing:.2px;
 }
+
 .sub{
   margin:8px 0 0;
   color:var(--muted);
-  font-size: .95rem;
+  font-size:.95rem;
 }
 
+/* ---------- Card ---------- */
 .card{
-  background: rgba(17,21,33,.72);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 16px;
-  padding: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.3);
-  backdrop-filter: blur(10px);
+  background:rgba(17,21,33,.72);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  padding:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.3);
+  backdrop-filter:blur(10px);
 }
 
+/* ---------- Compass ---------- */
 .compass{
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  margin: 8px auto 16px;
-  position: relative;
-  background: radial-gradient(circle at 50% 45%, #2a2f3a 0%, #10131a 60%);
-  border: 6px solid var(--ring);
-  box-shadow: inset 0 0 40px rgba(0,0,0,.55);
-  transform: rotate(0deg);
-  transition: transform 50ms linear;
+  width:240px;
+  height:240px;
+  border-radius:50%;
+  margin:8px auto 16px;
+  position:relative;
+  background:radial-gradient(circle at 50% 45%, #2a2f3a 0%, #10131a 60%);
+  border:6px solid var(--ring);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.55);
+  transform:rotate(0deg);
+  transition:transform 50ms linear;
 }
 
-/* North label */
+/* 🕋 Kaaba indicator (replaces N) */
 .compass::after{
-  content:"N";
+  content:"🕋";
   position:absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-weight: 800;
-  color: rgba(255,255,255,.85);
-  letter-spacing:.5px;
+  top:8px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:22px;
+  line-height:1;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.45));
 }
 
-/* Needle (points up by default) */
+/* Needle */
 .compass::before{
   content:"";
   position:absolute;
-  top: 22px;
+  top:22px;
   left:50%;
-  transform: translateX(-50%);
-  width: 6px;
-  height: 96px;
-  border-radius: 6px;
-  background: linear-gradient(#ff4b4b, #ff2b2b);
-  box-shadow: 0 0 18px rgba(255,75,75,.45);
+  transform:translateX(-50%);
+  width:6px;
+  height:96px;
+  border-radius:6px;
+  background:linear-gradient(#ff4b4b,#ff2b2b);
+  box-shadow:0 0 18px rgba(255,75,75,.45);
 }
 
 /* Center dot */
@@ -98,48 +106,69 @@ body{
   transform:translate(-50%,-50%);
 }
 
-/* Button */
+/* ---------- Button ---------- */
 .btn{
-  width: 100%;
-  border: none;
-  cursor: pointer;
-  padding: 12px 14px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 1rem;
-  color: white;
-  background: var(--accent);
+  width:100%;
+  border:none;
+  cursor:pointer;
+  padding:12px 14px;
+  border-radius:12px;
+  font-weight:700;
+  font-size:1rem;
+  color:white;
+  background:var(--accent);
 }
-.btn:active{ transform: translateY(1px); }
 
+.btn:active{
+  transform:translateY(1px);
+}
+
+/* ---------- Text / Stats ---------- */
 .stats{
-  margin-top: 14px;
+  margin-top:14px;
   display:flex;
   flex-direction:column;
   gap:8px;
   text-align:center;
 }
+
 .stat{
-  color: var(--text);
-  font-weight: 600;
+  color:var(--text);
+  font-weight:600;
 }
-.map-card{ padding: 14px; }
+
+/* ---------- Map ---------- */
+.map-card{
+  padding:14px;
+}
+
 .map{
   width:100%;
-  height: 360px;
-  border-radius: 12px;
+  height:360px;
+  border-radius:12px;
   overflow:hidden;
-  border: 1px solid rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.08);
 }
+
 .map-note{
   margin-top:10px;
-  color: var(--muted);
-  font-size: .9rem;
+  color:var(--muted);
+  font-size:.9rem;
   text-align:center;
 }
 
-@media (max-width: 600px){
-  .compass{ width: 220px; height: 220px; }
-  .map{ height: 300px; }
-  .header h1{ font-size: 1.6rem; }
+/* ---------- Mobile ---------- */
+@media (max-width:600px){
+  .compass{
+    width:220px;
+    height:220px;
+  }
+
+  .map{
+    height:300px;
+  }
+
+  .header h1{
+    font-size:1.6rem;
+  }
 }
