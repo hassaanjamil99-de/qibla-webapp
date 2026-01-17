@@ -1,64 +1,145 @@
-:root {
-    --bg: #0f1115;
-    --fg: #f2f2f2;
-    --muted: #aab0bb;
+:root{
+  --bg:#0b0d12;
+  --panel:#111521;
+  --text:#f3f5f7;
+  --muted:#a8b0bd;
+  --accent:#2b7cff;
+  --ring:rgba(255,255,255,.14);
 }
 
-* { box-sizing: border-box; }
-body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--fg);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    text-align: center;
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:radial-gradient(1200px 600px at 50% 20%, #121827 0%, var(--bg) 55%);
+  color:var(--text);
 }
 
-h1 { font-size: 2em; margin-bottom: 20px; }
-
-#compass {
-    width: 200px;
-    height: 200px;
-    background-color: #333;
-    border-radius: 50%;
-    position: relative;
-    margin: 20px auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.wrap{
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 28px 18px 40px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
 }
 
-#compass::before {
-    content: "";
-    width: 6px;
-    height: 100px;
-    background: #e53935;
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform-origin: center;
-    transform: translateX(-50%);
+.header{
+  text-align:center;
+}
+.header h1{
+  margin:0;
+  font-size: 2rem;
+  letter-spacing:.2px;
+}
+.sub{
+  margin:8px 0 0;
+  color:var(--muted);
+  font-size: .95rem;
 }
 
-#enableSensor {
-    padding: 12px 20px;
-    background: #2b7cff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 1em;
-    cursor: pointer;
-    transition: background 0.3s ease;
+.card{
+  background: rgba(17,21,33,.72);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.3);
+  backdrop-filter: blur(10px);
 }
 
-#enableSensor:hover {
-    background: #1c5f99;
+.compass{
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  margin: 8px auto 16px;
+  position: relative;
+  background: radial-gradient(circle at 50% 45%, #2a2f3a 0%, #10131a 60%);
+  border: 6px solid var(--ring);
+  box-shadow: inset 0 0 40px rgba(0,0,0,.55);
+  transform: rotate(0deg);
+  transition: transform 50ms linear;
 }
 
-#headingText, #accuracyText {
-    margin-top: 20px;
-    font-size: 1.2em;
+/* North label */
+.compass::after{
+  content:"N";
+  position:absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 800;
+  color: rgba(255,255,255,.85);
+  letter-spacing:.5px;
+}
+
+/* Needle (points up by default) */
+.compass::before{
+  content:"";
+  position:absolute;
+  top: 22px;
+  left:50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 96px;
+  border-radius: 6px;
+  background: linear-gradient(#ff4b4b, #ff2b2b);
+  box-shadow: 0 0 18px rgba(255,75,75,.45);
+}
+
+/* Center dot */
+.compass .dot{
+  position:absolute;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#fff;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+}
+
+/* Button */
+.btn{
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+  background: var(--accent);
+}
+.btn:active{ transform: translateY(1px); }
+
+.stats{
+  margin-top: 14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  text-align:center;
+}
+.stat{
+  color: var(--text);
+  font-weight: 600;
+}
+.map-card{ padding: 14px; }
+.map{
+  width:100%;
+  height: 360px;
+  border-radius: 12px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.map-note{
+  margin-top:10px;
+  color: var(--muted);
+  font-size: .9rem;
+  text-align:center;
+}
+
+@media (max-width: 600px){
+  .compass{ width: 220px; height: 220px; }
+  .map{ height: 300px; }
+  .header h1{ font-size: 1.6rem; }
 }
