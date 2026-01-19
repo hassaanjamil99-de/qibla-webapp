@@ -10,8 +10,10 @@ const compassEl = document.getElementById("compass");
 const enableBtn = document.getElementById("enableSensor");
 const headingTextEl = document.getElementById("headingText");
 const accuracyTextEl = document.getElementById("accuracyText");
+const qiblaToastEl = document.getElementById("qiblaToast");
+const tickSoundEl = document.getElementById("tickSound");
 
-// Add center dot if not present (nice look)
+// Add center dot (nice look)
 (function ensureDot(){
   if (!compassEl.querySelector(".dot")) {
     const dot = document.createElement("div");
@@ -24,6 +26,12 @@ const accuracyTextEl = document.getElementById("accuracyText");
 let qiblaBearing = null;
 let lastRotation = 0;
 let started = false;
+
+// Alignment state
+let wasAligned = false;
+let lastAlignedAt = 0;
+const ALIGN_TOLERANCE_DEG = 5;   // 3 = stricter, 7 = easier
+const ALIGN_COOLDOWN_MS = 4000;  // prevent spam
 
 // Map state
 let map, kaabaMarker, userMarker, qiblaLine;
@@ -38,18 +46,15 @@ function normalize360(deg) {
   return x;
 }
 
-// shortest signed angle diff: [-180, 180]
 function shortestAngleDiff(target, current) {
   return (target - current + 540) % 360 - 180;
 }
 
-// smoothing
 function smoothRotation(current, target, factor = 0.18) {
   const diff = shortestAngleDiff(target, current);
   return normalize360(current + diff * factor);
 }
 
-// Qibla bearing 0..360
 function calculateQiblaBearing(userLat, userLon) {
   const lat1 = toRadians(userLat);
   const lat2 = toRadians(KAABA_LAT);
@@ -63,7 +68,6 @@ function calculateQiblaBearing(userLat, userLon) {
   return normalize360(toDegrees(angle));
 }
 
-// Distance (km) - Haversine
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // km
   const dLat = toRadians(lat2 - lat1);
@@ -79,9 +83,15 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+function playTick() {
+  if (!tickSoundEl) return;
+  tickSoundEl.currentTime = 0;
+  tickSoundEl.play().catch(() => {});
+}
+
 // ---------------- Orientation ----------------
 function getDeviceHeading(event) {
-  // iOS Safari (true compass)
+  // iOS Safari true compass heading:
   if (typeof event.webkitCompassHeading === "number") {
     return {
       heading: normalize360(event.webkitCompassHeading),
@@ -91,7 +101,7 @@ function getDeviceHeading(event) {
     };
   }
 
-  // Android/others
+  // Android/others (relative)
   if (typeof event.alpha === "number") {
     return {
       heading: normalize360(360 - event.alpha),
@@ -108,7 +118,6 @@ function updateCompass(deviceHeading) {
 
   const targetRotation = normalize360(qiblaBearing - deviceHeading);
   lastRotation = smoothRotation(lastRotation, targetRotation, 0.18);
-
   compassEl.style.transform = `rotate(${lastRotation}deg)`;
 }
 
@@ -116,19 +125,43 @@ function setText(deviceHeading, accuracyLabel, distanceKm) {
   if (qiblaBearing === null) return;
 
   const turn = shortestAngleDiff(qiblaBearing, deviceHeading);
+  const turnAbs = Math.abs(turn);
+
   const turnText =
-    turn === 0 ? "0°" :
-    turn > 0 ? `${Math.abs(turn).toFixed(0)}° right` :
-               `${Math.abs(turn).toFixed(0)}° left`;
+    turnAbs < 0.5 ? "0°" :
+    turn > 0 ? `${turnAbs.toFixed(0)}° right` :
+               `${turnAbs.toFixed(0)}° left`;
 
   headingTextEl.textContent =
     `Qibla: ${qiblaBearing.toFixed(0)}° | Heading: ${deviceHeading.toFixed(0)}° | Turn: ${turnText}`;
 
   if (distanceKm != null) {
-    accuracyTextEl.textContent = `Distance to Kaaba: ${distanceKm.toFixed(0)} km | Accuracy: ${accuracyLabel ?? "--"}`;
+    accuracyTextEl.textContent =
+      `Distance to Kaaba: ${distanceKm.toFixed(0)} km | Accuracy: ${accuracyLabel ?? "--"}`;
   } else {
     accuracyTextEl.textContent = `Accuracy: ${accuracyLabel ?? "--"}`;
   }
+
+  // ✅ Alignment detection (ring + toast + tick)
+  const now = Date.now();
+  const aligned = turnAbs <= ALIGN_TOLERANCE_DEG;
+
+  if (aligned) {
+    compassEl.classList.add("aligned");
+    qiblaToastEl?.classList.add("show");
+
+    if (!wasAligned && (now - lastAlignedAt) > ALIGN_COOLDOWN_MS) {
+      lastAlignedAt = now;
+
+      if (navigator.vibrate) navigator.vibrate(80);
+      playTick();
+    }
+  } else {
+    compassEl.classList.remove("aligned");
+    qiblaToastEl?.classList.remove("show");
+  }
+
+  wasAligned = aligned;
 }
 
 // ---------------- Permissions + Location ----------------
@@ -158,7 +191,7 @@ function initMap() {
   map = L.map("map", { zoomControl: true }).setView([KAABA_LAT, KAABA_LON], 15);
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: '&copy; OpenStreetMap contributors'
+    attribution: "&copy; OpenStreetMap contributors"
   }).addTo(map);
 
   kaabaMarker = L.marker([KAABA_LAT, KAABA_LON]).addTo(map);
@@ -168,23 +201,17 @@ function initMap() {
 function updateMap(userLat, userLon) {
   if (!map) return;
 
-  // User marker
   if (userMarker) userMarker.remove();
   userMarker = L.marker([userLat, userLon]).addTo(map);
   userMarker.bindPopup("<b>Your Location</b>");
 
-  // Qibla line
   if (qiblaLine) qiblaLine.remove();
   qiblaLine = L.polyline(
     [[userLat, userLon], [KAABA_LAT, KAABA_LON]],
     { color: "#ff3b3b", weight: 3 }
   ).addTo(map);
 
-  // Fit view nicely
-  const bounds = L.latLngBounds(
-    [userLat, userLon],
-    [KAABA_LAT, KAABA_LON]
-  );
+  const bounds = L.latLngBounds([userLat, userLon], [KAABA_LAT, KAABA_LON]);
   map.fitBounds(bounds, { padding: [30, 30] });
 }
 
@@ -221,11 +248,11 @@ enableBtn.addEventListener("click", async () => {
     qiblaBearing = calculateQiblaBearing(lat, lon);
     const distanceKm = haversineDistance(lat, lon, KAABA_LAT, KAABA_LON);
 
-    // Update map with user + line
     updateMap(lat, lon);
 
     headingTextEl.textContent =
       `Location OK. Qibla bearing: ${qiblaBearing.toFixed(0)}°. Move phone in a figure-8 to calibrate.`;
+
     accuracyTextEl.textContent =
       `Distance to Kaaba: ${distanceKm.toFixed(0)} km | Accuracy: --`;
 
