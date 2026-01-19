@@ -118,7 +118,7 @@ function updateCompass(deviceHeading) {
 
   const targetRotation = normalize360(qiblaBearing - deviceHeading);
   lastRotation = smoothRotation(lastRotation, targetRotation, 0.18);
-  compassEl.style.transform = `rotate(${lastRotation}deg)`;
+  compassEl.style.transform = `rotate(${lastRotation}deg)`;  // Needle rotation
 }
 
 function setText(deviceHeading, accuracyLabel, distanceKm) {
