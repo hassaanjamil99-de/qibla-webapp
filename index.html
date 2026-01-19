@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Qibla Direction</title>
 
-  <!-- Favicon (adjust path if your icons are in root) -->
+  <!-- Favicon -->
   <link rel="icon" type="image/png" href="icons/android-chrome-192x192.png">
 
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <!-- Your CSS -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
@@ -34,6 +34,16 @@
         <div id="headingText" class="stat">Heading: --°</div>
         <div id="accuracyText" class="stat">Accuracy: --</div>
       </div>
+
+      <!-- ✅ Toast shown when aligned -->
+      <div id="qiblaToast" class="toast" role="status" aria-live="polite">
+        ✅ You’re facing the Kaaba 🕋
+      </div>
+
+      <!-- ✅ Tick sound (upload tick.mp3 in repo root) -->
+      <audio id="tickSound" preload="auto">
+        <source src="tick.mp3" type="audio/mpeg">
+      </audio>
     </section>
 
     <section class="card map-card">
