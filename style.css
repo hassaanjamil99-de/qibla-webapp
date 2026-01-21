@@ -62,11 +62,11 @@ body{
   transition:transform 50ms linear;
 }
 
-/* 🕋 Kaaba indicator (fixed) */
+/* 🕋 Kaaba indicator (fixed at the top of the compass) */
 .compass::after{
   content:"🕋";
   position:absolute;
-  top:12px; /* Adjust if needed to position Kaaba nicely at top */
+  top:12px; /* Adjust if needed */
   left:50%;
   transform:translateX(-50%);
   font-size:22px;
